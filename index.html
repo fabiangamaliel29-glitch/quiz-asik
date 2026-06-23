@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Sensor Kejujuran</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            /* Menggunakan gambar yang kamu kirim sebagai background penuh */
+            background-image: url('https://telegra.ph/file/07fbe01524e4d588da6fa.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Lapisan gelap transparan di atas background agar teks kuis tetap terbaca jelas */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1;
+        }
+
+        .container {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(8px); /* Efek glassmorphism kekinian */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 2;
+        }
+
+        .progress-bar {
+            font-size: 14px;
+            color: #10b981;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 20px;
+            color: #f3f4f6;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            min-height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Tombol IYA tetap aman di dalam kotak kuis */
+        .btn-yes {
+            background-color: #10b981;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .btn-yes:hover {
+            background-color: #059669;
+        }
+
+        /* Tombol TIDAK / BATAL menggunakan posisi FIXED agar bisa kabur ke SELURUH LAYAR */
+        .btn-no {
+            background-color: #ef4444;
+            color: white;
+            position: fixed;
+            width: 160px; /* Dipersempit sedikit agar enak bergerak di layar lebar */
+            z-index: 999;
+            transition: all 0.1s ease-out;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Layar Hasil Akhir */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(9, 13, 22, 0.98);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .overlay h2 {
+            font-size: 28px;
+            color: #ef4444;
+            margin-bottom: 20px;
+        }
+
+        .overlay p {
+            font-size: 16px;
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .summary-box {
+            background: #111827;
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 13px;
+            max-width: 360px;
+            color: #a1a1aa;
+            max-height: 220px;
+            overflow-y: auto;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-card">
+        <div class="progress-bar" id="quiz-progress">PERTANYAAN 1 / 10</div>
+        <h1 id="question-text">Loading pertanyaan...</h1>
+        
+        <div class="btn-container">
+            <button class="btn btn-yes" onclick="jawabIya()">IYA</button>
+            <button class="btn btn-no" id="ghost-btn">TIDAK</button>
+        </div>
+    </div>
+
+    <div class="overlay" id="prank-screen">
+        <h2>HASIL DETEKSI: 100% GOONER! 📝</h2>
+        <p>Data asli pengakuan dosa kamu sudah tersimpan di sistem:</p>
+        
+        <div class="summary-box" id="summary-list"></div>
+
+        <p style="font-weight: bold; color: #38bdf8;">Silakan SCREENSHOT halaman ini sekarang sebagai bukti fisik! 😂</p>
+        <button class="btn btn-yes" style="margin-top: 25px; max-width: 200px;" onclick="location.reload()">Reset Kuis</button>
+    </div>
+
+    <script>
+        const daftarPertanyaan = [
+            "Apakah kamu suka sama jomok?",
+            "Apakah kamu gooners sejati?",
+            "JMK67 adalah grup musik kesukaanku?",
+            "Aku gooning tadi pagi?",
+            "Aku suka anak tk?",
+            "Presiden kesukaanku I.r. Soeamba?",
+            "Aku lebih milih femboy daripada tomboy?",
+            "Aku suka yang berbulu?",
+            "Youtuber kesukaanku Reza Auditore?",
+            "Aku suka Rainbow Ruby?"
+        ];
+
+        let indexSekarang = 0;
+
+        const questionText = document.getElementById('question-text');
+        const quizProgress = document.getElementById('quiz-progress');
+        const ghostBtn = document.getElementById('ghost-btn');
+        const prankScreen = document.getElementById('prank-screen');
+        const summaryList = document.getElementById('summary-list');
+
+        function resetPosisiTombol() {
+            // Posisi awal tombol saat ganti soal baru biar kelihatan normal dulu
+            ghostBtn.style.top = "auto";
+            ghostBtn.style.left = "50%";
+            ghostBtn.style.transform = "translateX(-50%)";
+            ghostBtn.style.bottom = "40px"; // nempel di area kuis
+            ghostBtn.textContent = "TIDAK";
+        }
+
+        function tampilkanPertanyaan() {
+            if (indexSekarang < daftarPertanyaan.length) {
+                quizProgress.textContent = `PERTANYAAN ${indexSekarang + 1} / ${daftarPertanyaan.length}`;
+                questionText.textContent = `"${daftarPertanyaan[indexSekarang]}"`;
+                resetPosisiTombol();
+            } else {
+                akhiriPrank();
+            }
+        }
+
+        // Logika kabur tanpa batasan (menggunakan seluruh lebar dan tinggi jendela browser)
+        function kabur() {
+            ghostBtn.textContent = "BATAL";
+            ghostBtn.style.transform = "none"; // Matikan fungsi centering posisi awal
+
+            // Mengambil batas ukuran total layar browser/HP user
+            const maxX = window.innerWidth - ghostBtn.offsetWidth;
+            const maxY = window.innerHeight - ghostBtn.offsetHeight;
+
+            // Koordinat acak murni dari ujung ke ujung layar
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+
+            ghostBtn.style.left = `${randomX}px`;
+            ghostBtn.style.top = `${randomY}px`;
+        }
+
+        ghostBtn.addEventListener('mouseenter', kabur);
+        ghostBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            kabur();
+        });
+
+        function jawabIya() {
+            indexSekarang++;
+            tampilkanPertanyaan();
+        }
+
+        function akhiriPrank() {
+            let htmlHasil = "";
+            daftarPertanyaan.forEach((soal, i) => {
+                htmlHasil += `<p style="margin-bottom:8px;">${i+1}. ${soal} <br><span style="color:#10b981; font-weight:bold;">👉 Jawaban: IYA</span></p>`;
+            });
+            summaryList.innerHTML = htmlHasil;
+            prankScreen.style.display = 'flex';
+        }
+
+        tampilkanPertanyaan();
+    </script>
+</body>
+</html>
